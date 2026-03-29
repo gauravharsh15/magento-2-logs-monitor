@@ -1,128 +1,187 @@
 <?php
 namespace Gaurav\LogMonitor\Model;
 
-use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\App\Filesystem\DirectoryList;
+use Magento\Framework\Filesystem\Driver\File as FileDriver;
 use Gaurav\LogMonitor\Model\Config;
+use Gaurav\LogMonitor\Model\AlertFactory;
+use Gaurav\LogMonitor\Model\ResourceModel\Alert as AlertResource;
+use Gaurav\LogMonitor\Model\StateFactory; 
+use Gaurav\LogMonitor\Model\ResourceModel\State as StateResource;
+use Psr\Log\LoggerInterface;
 
 class LogReader
 {
-    protected $resourceConnection;
     protected $directoryList;
+    protected $fileDriver;
     protected $config;
+    protected $alertFactory;
+    protected $alertResource;
+    protected $stateFactory;
+    protected $stateResource;
+    protected $logger;
 
     public function __construct(
-        ResourceConnection $resourceConnection,
         DirectoryList $directoryList,
-        Config $config
+        FileDriver $fileDriver,
+        Config $config,
+        AlertFactory $alertFactory,
+        AlertResource $alertResource,
+        StateFactory $stateFactory,
+        StateResource $stateResource,
+        LoggerInterface $logger
     ) {
-        $this->resourceConnection = $resourceConnection;
         $this->directoryList = $directoryList;
+        $this->fileDriver = $fileDriver;
         $this->config = $config;
+        $this->alertFactory = $alertFactory;
+        $this->alertResource = $alertResource;
+        $this->stateFactory = $stateFactory;
+        $this->stateResource = $stateResource;
+        $this->logger = $logger;
     }
 
-    public function execute()
+    /**
+     * Main entry point called by the Cron job
+     */
+    public function execute($forceReset = false)
     {
         if (!$this->config->isEnabled()) {
             return;
         }
-        // Get the Magento var/log directory path
+
         $logDir = $this->directoryList->getPath(DirectoryList::LOG);
-        $logFiles = glob($logDir . DIRECTORY_SEPARATOR . '*.log');
+        $ignoredFiles = $this->config->getIgnoredFiles(); // e.g., ['debug.log', 'system.log']
 
-        $ignoredFiles = $this->config->getIgnoredFiles();
-
-        if ($logFiles) {
-            foreach ($logFiles as $filePath) {
-                if (is_file($filePath)) {
+        try {
+            $files = $this->fileDriver->readDirectory($logDir);
+            
+            foreach ($files as $filePath) {
+                // Only process .log files and skip ignored ones
+                if (pathinfo($filePath, PATHINFO_EXTENSION) === 'log') {
                     $fileName = basename($filePath);
-                    
-                    // 3. Skip if this file is in the ignore list
-                    if (in_array($fileName, $ignoredFiles)) {
-                        continue;
+                    if (!in_array($fileName, $ignoredFiles)) {
+                        $this->processFile($filePath, $fileName, $forceReset);
                     }
-                    
-                    $this->processFile($filePath, $fileName);
                 }
             }
+        } catch (\Exception $e) {
+            $this->logger->error("LogMonitor Error: " . $e->getMessage());
         }
     }
 
-    protected function processFile($filePath, $fileName)
+    /**
+     * Process an individual log file using memory-efficient byte-offsets
+     */
+    protected function processFile($filePath, $fileName, $forceReset)
     {
-        $connection = $this->resourceConnection->getConnection();
-        $stateTable = $this->resourceConnection->getTableName('gaurav_logmonitor_state');
+        $fileSize = $this->fileDriver->stat($filePath)['size'];
         
-        // 1. Get current file size
-        $currentFileSize = filesize($filePath);
-        if ($currentFileSize === 0) return; // File is empty, skip
+        // Load the state to get the last read byte offset
+        $state = $this->stateFactory->create();
+        $this->stateResource->load($state, $fileName, 'file_name');
 
-        // 2. Get saved byte offset from DB
-        $savedOffset = $connection->fetchOne(
-            $connection->select()->from($stateTable, 'last_byte_offset')->where('file_path = ?', $filePath)
-        );
-        $savedOffset = $savedOffset ? (int)$savedOffset : 0;
+        $lastOffset = $state->getLastByteOffset() ?: 0;
 
-        // 3. Handle Log Rotation (If file is smaller than our offset, it was zipped/wiped)
-        if ($currentFileSize < $savedOffset) {
-            $savedOffset = 0;
+        // If forced reset, or if file size is smaller than offset (log rotation occurred)
+        if ($forceReset || $fileSize < $lastOffset) {
+            $lastOffset = 0;
         }
 
-        // 4. Open file and jump to offset (ZERO memory footprint)
-        $handle = fopen($filePath, 'r');
-        fseek($handle, $savedOffset);
+        // If there is no new data, skip to save resources
+        if ($fileSize == $lastOffset) {
+            return;
+        }
 
-        // 5. Read line by line
-        while (($line = fgets($handle)) !== false) {
-            // Broadened to catch Errors, Criticals, Warnings, and generic Exceptions
-            if (stripos($line, 'error') !== false || 
-                stripos($line, 'critical') !== false || 
-                stripos($line, 'warning') !== false ||
-                stripos($line, 'exception') !== false) {
+        $fileHandle = $this->fileDriver->fileOpen($filePath, 'r');
+        
+        // Jump directly to the new data
+        fseek($fileHandle, $lastOffset);
+
+        $buffer = '';
+        $currentSeverity = 'INFO';
+        $currentHash = '';
+        $isFirstLine = true;
+
+        while (($line = fgets($fileHandle)) !== false) {
+            // Check if line starts with Magento timestamp: [YYYY-MM-DD HH:MM:SS]
+            if (preg_match('/^\[\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}.*?\]/', $line)) {
                 
-                $this->processErrorLine($line, $fileName, $connection);
+                // 1. Save the previously buffered multi-line error
+                if (!$isFirstLine && !empty($buffer)) {
+                    $this->saveAlert($currentHash, $currentSeverity, $buffer, $fileName);
+                }
+
+                $isFirstLine = false;
+                $buffer = $line;
+                
+                // 2. Extract Severity Level (e.g., main.CRITICAL: -> CRITICAL)
+                if (preg_match('/\.([A-Z]+)\:/', $line, $matches)) {
+                    $currentSeverity = $matches[1];
+                } else {
+                    $currentSeverity = 'INFO';
+                }
+
+                // 3. Generate Deduplication Hash (Strip timestamp first)
+                $cleanLine = trim(preg_replace('/^\[.*?\] /', '', $line));
+                
+                // Optional: Strip dynamic object IDs or file paths from hash if needed
+                // $cleanLine = preg_replace('/obj_id=\d+/', 'obj_id=X', $cleanLine);
+                
+                $currentHash = md5($cleanLine);
+            } else {
+                // This line has no timestamp; it is part of a Stack Trace. Append it.
+                $buffer .= $line;
             }
         }
 
-        // 6. Save the exact byte position where we stopped
-        $newOffset = ftell($handle);
-        fclose($handle);
+        // Save the very last error block in the file
+        if (!empty($buffer)) {
+            $this->saveAlert($currentHash, $currentSeverity, $buffer, $fileName);
+        }
 
-        $connection->insertOnDuplicate(
-            $stateTable,
-            ['file_path' => $filePath, 'last_byte_offset' => $newOffset, 'updated_at' => date('Y-m-d H:i:s')],
-            ['last_byte_offset', 'updated_at']
-        );
+        // Save the new byte offset back to the state table
+        $newOffset = ftell($fileHandle);
+        $this->fileDriver->fileClose($fileHandle);
+
+        $state->setFileName($fileName);
+        $state->setLastByteOffset($newOffset);
+        $this->stateResource->save($state);
     }
 
-    protected function processErrorLine($line, $fileName, $connection)
+    /**
+     * Deduplicate and save the error to the database
+     */
+    protected function saveAlert($hash, $severity, $fullTrace, $fileName)
     {
-        $alertsTable = $this->resourceConnection->getTableName('gaurav_logmonitor_alerts');
-
-        // Strips standard Magento formatting like "[2026-03-29 05:14:23] report.CRITICAL: "
-        $cleanError = preg_replace('/^\[.*?\]\s*[a-zA-Z0-9_-]+\.[A-Z]+:\s*/', '', trim($line));
-        
-        // Fallback: If it's a custom log without the 'report.CRITICAL:' part, just strip the date brackets
-        if ($cleanError === trim($line)) {
-            $cleanError = preg_replace('/^\[.*?\]\s*/', '', $cleanError);
+        // Don't log INFO or DEBUG messages to keep the dashboard clean
+        if (in_array($severity, ['INFO', 'DEBUG'])) {
+            return; 
         }
-        
-        if (empty($cleanError)) return;
 
-        // Create the fingerprint
-        $errorHash = md5($cleanError);
-        
-        // Take a 255 char snippet for the email preview
-        $preview = substr($cleanError, 0, 255);
+        $alert = $this->alertFactory->create();
+        $this->alertResource->load($alert, $hash, 'error_hash');
 
-        // Upsert into the alerts table (Insert if new, update count if exists)
-        $sql = "INSERT INTO {$alertsTable} (log_file, error_hash, error_preview, occurrence_count, is_notified, first_seen_at, last_seen_at) 
-                VALUES (?, ?, ?, 1, 0, NOW(), NOW()) 
-                ON DUPLICATE KEY UPDATE 
-                occurrence_count = occurrence_count + 1,
-                last_seen_at = NOW(),
-                is_notified = 0"; // Reset is_notified to 0 so the dev gets reminded if it happens again
+        if ($alert->getId()) {
+            // Error exists: Increment count and update timestamp
+            $count = $alert->getOccurrenceCount() + 1;
+            $alert->setOccurrenceCount($count);
+            $alert->setLastSeenAt(date('Y-m-d H:i:s'));
+            // Note: We don't overwrite the full_trace to save DB performance, 
+            // as the stack trace for the exact same error hash is usually identical.
+        } else {
+            // New Error: Create a fresh record
+            $alert->setErrorHash($hash);
+            $alert->setSeverity($severity);
+            $alert->setLogFile($fileName);
+            $alert->setErrorPreview(substr(trim($fullTrace), 0, 250)); 
+            $alert->setFullTrace($fullTrace);
+            $alert->setOccurrenceCount(1);
+            $alert->setIsNotified(0); // 0 means email hasn't been sent yet
+            $alert->setCreatedAt(date('Y-m-d H:i:s'));
+            $alert->setLastSeenAt(date('Y-m-d H:i:s'));
+        }
 
-        $connection->query($sql, [$fileName, $errorHash, $preview]);
+        $this->alertResource->save($alert);
     }
 }

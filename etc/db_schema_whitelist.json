@@ -3,10 +3,13 @@
         "column": {
             "file_path": true,
             "last_byte_offset": true,
-            "updated_at": true
+            "updated_at": true,
+            "entity_id": true,
+            "file_name": true
         },
         "constraint": {
-            "PRIMARY": true
+            "PRIMARY": true,
+            "GAURAV_LOGMONITOR_STATE_FILE_NAME": true
         }
     },
     "gaurav_logmonitor_alerts": {
@@ -18,7 +21,9 @@
             "occurrence_count": true,
             "is_notified": true,
             "first_seen_at": true,
-            "last_seen_at": true
+            "last_seen_at": true,
+            "severity": true,
+            "full_trace": true
         },
         "constraint": {
             "PRIMARY": true,

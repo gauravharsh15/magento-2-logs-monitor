@@ -51,6 +51,15 @@
     </listingToolbar>
 
     <columns name="logmonitor_alerts_columns">
+        <column name="severity" component="Magento_Ui/js/grid/columns/select">
+            <settings>
+                <options class="Gaurav\LogMonitor\Model\Config\Source\SeverityOptions"/>
+                <filter>select</filter>
+                <dataType>select</dataType>
+                <label translate="true">Severity</label>
+                <bodyTmpl>ui/grid/cells/html</bodyTmpl>
+            </settings>
+        </column>
         <column name="entity_id" sortOrder="10">
             <settings>
                 <filter>textRange</filter>
@@ -101,5 +110,11 @@
                 <label translate="true">Last Seen</label>
             </settings>
         </column>
+        <actionsColumn name="actions" class="Gaurav\LogMonitor\Ui\Component\Listing\Column\ViewAction">
+            <settings>
+                <indexField>entity_id</indexField>
+                <label translate="true">Actions</label>
+            </settings>
+        </actionsColumn>
     </columns>
 </listing>

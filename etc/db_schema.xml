@@ -1,13 +1,15 @@
 <?xml version="1.0"?>
 <schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
     
-    <table name="gaurav_logmonitor_state" resource="default" engine="innodb" comment="Tracks byte offsets for log files">
-        <column xsi:type="varchar" name="file_path" length="255" nullable="false" comment="Full absolute path to log file"/>
-        <column xsi:type="bigint" name="last_byte_offset" padding="20" unsigned="true" nullable="false" default="0" comment="Last read byte position"/>
-        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Last time this file was read"/>
-        
+    <table name="gaurav_logmonitor_state" resource="default" engine="innodb" comment="Log Monitor File State Tracking">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="file_name" nullable="false" length="255" comment="Log File Name"/>
+        <column xsi:type="int" name="last_byte_offset" padding="10" unsigned="true" nullable="false" default="0" comment="Last Read Byte Offset"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
-            <column name="file_path"/>
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="UNQ_GAURAV_LOGMONITOR_STATE_FILE_NAME">
+            <column name="file_name"/>
         </constraint>
     </table>
 
@@ -16,6 +18,8 @@
         <column xsi:type="varchar" name="log_file" length="100" nullable="false" comment="Short Log file name e.g. exception.log"/>
         <column xsi:type="varchar" name="error_hash" length="32" nullable="false" comment="MD5 fingerprint of the error string"/>
         <column xsi:type="text" name="error_preview" nullable="false" comment="Snippet of the error for the email"/>
+        <column xsi:type="varchar" name="severity" nullable="true" length="32" comment="Log Severity Level"/>
+        <column xsi:type="text" name="full_trace" nullable="true" comment="Full Exception Stack Trace"/>
         <column xsi:type="int" name="occurrence_count" padding="10" unsigned="true" nullable="false" default="1" comment="Number of times this error occurred"/>
         <column xsi:type="smallint" name="is_notified" padding="5" unsigned="true" nullable="false" default="0" comment="0 = pending email, 1 = already emailed"/>
         <column xsi:type="timestamp" name="first_seen_at" nullable="false" default="CURRENT_TIMESTAMP" comment="When this specific error first happened"/>
