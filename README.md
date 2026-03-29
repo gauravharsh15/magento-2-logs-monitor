@@ -1,34 +1,74 @@
 # Gaurav Log Monitor for Magento 2
 
-A high-performance, memory-efficient log monitoring tool that turns messy `var/log` files into a clean, actionable error dashboard. 
+A professional-grade, high-performance monitoring engine that transforms chaotic `var/log` files into a clean, actionable health dashboard for Adobe Commerce.
 
-## 📖 The Problem
-Magento log files (like `exception.log`) can grow to several gigabytes in production. Standard log viewers often crash the server by trying to load the entire file into memory. Furthermore, the same error can repeat 10,000 times, making it impossible to find unique issues amidst the noise.
+## 📖 Why This Module?
 
-## ✅ The Solution
-**Gaurav Log Monitor** acts as an automated sentry for your log folder using a **Byte-Offset Scanner**. It remembers exactly where it left off and only reads new lines, meaning it can process a 10GB file using only a few kilobytes of RAM. It then **deduplicated** those errors so you see exactly what is broken.
+In most Magento environments, log files are a "dark hole." They grow to gigabytes, are rarely checked until a site crashes, and contain thousands of repetitive lines that bury the actual root cause of issues.
 
-
-
----
-
-## 🚀 Key Features
-
-* **Zero-Memory Footprint:** Uses `fseek` to jump to new log entries instantly, bypassing file size limitations.
-* **Smart Deduplication:** Hashes error messages (minus timestamps) to group identical issues together with an occurrence count.
-* **Unified Admin Grid:** A single dashboard to view errors from `system.log`, `exception.log`, and all custom `.log` files in one place.
-* **Proactive Email Alerts:** Automatically batches new errors and emails them to the dev team.
-* **Alert Thresholds:** Configure the module to only email you if an error repeats (e.g., "Only alert me if this happens 5+ times").
-* **CLI Tools:** Includes a powerful console command to manually trigger scans or reset tracking.
+**Gaurav_LogMonitor** was built to solve this by providing:
+* **Proactive Health Checks:** Identifies "Silent Killers" like failed background data syncs (ERP/CRM) that don't crash the frontend.
+* **Operational Efficiency:** Stops senior developers from wasting hours "log hunting" through massive text files.
+* **Server Stability:** Scans 10GB+ logs using near-zero RAM, ensuring the monitoring tool never becomes a bottleneck.
 
 ---
 
-## 🛠 Installation
+## 🖥️ Preview & UI
+
+### 1. Unified Error Dashboard
+![Admin Dashboard Grid](docs/dashboard.png)
+*A consolidated, searchable view of all unique errors across every .log file in your system. This grid groups thousands of identical errors into single, manageable records.*
+
+### 2. Smart Alert Configuration
+![Module Configuration Settings](docs/config.png)
+*Easily manage your monitoring settings, define custom email recipients, and set alert thresholds.*
+
+---
+
+## ⚙️ Configuration & Navigation
+
+After installation, you can manage the module and view alerts via the following paths:
+
+### Admin Dashboard (The Grid)
+Navigate to: **System > Log Monitor Alerts**
+*This is the central command center where you view, filter, and mass-delete deduplicated error logs.*
+
+### System Configuration
+Navigate to: **Stores > Configuration > Gaurav Extensions > Log Monitor**
+Here you can configure:
+* **Enable/Disable:** Master switch for the background scanner.
+* **Recipient Emails:** List of developers to receive hourly summaries.
+* **Alert Threshold:** Minimum occurrences required before an email is triggered.
+* **Ignore List:** Define specific log files (like `debug.log`) to be skipped.
+
+---
+
+## 🏗️ Technical Architecture & Logic Flow
+
+The module follows a highly optimized, four-stage lifecycle:
+
+### 1. High-Performance Scanning Engine
+Standard log viewers crash servers by loading entire files into memory. This engine uses **Byte-Offset Tracking**:
+* **State Tracking:** Records the exact byte position (`last_byte_offset`) where the last scan ended.
+* **Efficient Seek:** Uses PHP’s `fseek()` to jump directly to that byte, reading only **newly appended data**.
+
+### 2. Intelligent Deduplication
+Every log line is normalized before storage:
+* **Normalization:** Strips timestamps and dynamic variables (IDs, hashes) from log lines.
+* **MD5 Hashing:** Generates a unique hash of the core error string.
+* **Consolidation:** Matches existing hashes to increment the **occurrence_count** rather than creating duplicates.
+
+### 3. Automated Cron Lifecycle
+* **`logmonitor_process` (Every 5 Mins):** The "Watcher" that scans files and populates the dashboard.
+* **`logmonitor_send_alerts` (Every Hour):** The "Messenger" that batches new critical errors into a single HTML email.
+
+---
+
+## 🛠️ Installation & Setup
 
 ```bash
 composer require gauravharsh/module-log-monitor
 bin/magento module:enable Gaurav_LogMonitor
 bin/magento setup:upgrade
-bin/magento setup:db-declaration:generate-whitelist --module-name=Gaurav_LogMonitor
 bin/magento setup:di:compile
 bin/magento cache:flush
