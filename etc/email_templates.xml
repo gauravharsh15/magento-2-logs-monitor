@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Email:etc/email_templates.xsd">
+    <template id="gaurav_logmonitor_alert_template" label="Log Monitor Alert" file="log_alert.html" type="html" module="Gaurav_LogMonitor" area="adminhtml"/>
+</config>

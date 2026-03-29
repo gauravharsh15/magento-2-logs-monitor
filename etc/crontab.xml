@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
+    <group id="default">
+        <job name="gaurav_logmonitor_process" instance="Gaurav\LogMonitor\Cron\ProcessLogs" method="execute">
+            <schedule>*/5 * * * *</schedule>
+        </job>
+        
+        <job name="gaurav_logmonitor_send_alerts" instance="Gaurav\LogMonitor\Cron\SendAlerts" method="execute">
+            <schedule>0 * * * *</schedule>
+        </job>
+    </group>
+</config>

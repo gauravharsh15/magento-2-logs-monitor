@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <logmonitor>
+            <general>
+                <enabled>1</enabled>
+                <ignore_files></ignore_files>
+            </general>
+            <alerts>
+                <recipient_emails></recipient_emails>
+                <threshold>1</threshold>
+            </alerts>
+        </logmonitor>
+    </default>
+</config>

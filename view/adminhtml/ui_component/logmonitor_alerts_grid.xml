@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">logmonitor_alerts_grid.logmonitor_alerts_grid_data_source</item>
+        </item>
+    </argument>
+    <settings>
+        <spinner>logmonitor_alerts_columns</spinner>
+        <deps>
+            <dep>logmonitor_alerts_grid.logmonitor_alerts_grid_data_source</dep>
+        </deps>
+    </settings>
+    
+    <dataSource name="logmonitor_alerts_grid_data_source" component="Magento_Ui/js/grid/provider">
+        <settings>
+            <storageConfig>
+                <param name="indexField" xsi:type="string">entity_id</param>
+            </storageConfig>
+            <updateUrl path="mui/index/render"/>
+        </settings>
+        <dataProvider class="Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider" name="logmonitor_alerts_grid_data_source">
+            <settings>
+                <requestFieldName>id</requestFieldName>
+                <primaryFieldName>entity_id</primaryFieldName>
+            </settings>
+        </dataProvider>
+    </dataSource>
+
+    <listingToolbar name="listing_top">
+        <settings>
+            <sticky>true</sticky>
+        </settings>
+        <massaction name="listing_massaction">
+            <action name="delete">
+                <settings>
+                    <confirm>
+                        <message translate="true">Are you sure you want to delete selected alerts?</message>
+                        <title translate="true">Delete Alerts</title>
+                    </confirm>
+                    <url path="logmonitor/alerts/massDelete"/>
+                    <type>delete</type>
+                    <label translate="true">Delete</label>
+                </settings>
+            </action>
+        </massaction>
+        <bookmark name="bookmarks"/>
+        <columnsControls name="columns_controls"/>
+        <filters name="listing_filters"/>
+        <paging name="listing_paging"/>
+    </listingToolbar>
+
+    <columns name="logmonitor_alerts_columns">
+        <column name="entity_id" sortOrder="10">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">ID</label>
+                <sorting>desc</sorting>
+            </settings>
+        </column>
+        <column name="log_file" sortOrder="20">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Log File</label>
+            </settings>
+        </column>
+        <column name="error_preview" sortOrder="30">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Error Output</label>
+            </settings>
+        </column>
+        <column name="occurrence_count" sortOrder="40">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">Occurrences</label>
+            </settings>
+        </column>
+        <column name="is_notified" sortOrder="50" component="Magento_Ui/js/grid/columns/select">
+            <settings>
+                <options>
+                    <option name="0" xsi:type="array"><item name="value" xsi:type="string">0</item><item name="label" xsi:type="string">Pending</item></option>
+                    <option name="1" xsi:type="array"><item name="value" xsi:type="string">1</item><item name="label" xsi:type="string">Emailed</item></option>
+                </options>
+                <filter>select</filter>
+                <dataType>select</dataType>
+                <label translate="true">Email Status</label>
+            </settings>
+        </column>
+        <column name="first_seen_at" class="Magento\Ui\Component\Listing\Columns\Date" sortOrder="60">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">First Seen</label>
+            </settings>
+        </column>
+        <column name="last_seen_at" class="Magento\Ui\Component\Listing\Columns\Date" sortOrder="70">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Last Seen</label>
+            </settings>
+        </column>
+    </columns>
+</listing>

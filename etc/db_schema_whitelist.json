@@ -1,0 +1,28 @@
+{
+    "gaurav_logmonitor_state": {
+        "column": {
+            "file_path": true,
+            "last_byte_offset": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "gaurav_logmonitor_alerts": {
+        "column": {
+            "entity_id": true,
+            "log_file": true,
+            "error_hash": true,
+            "error_preview": true,
+            "occurrence_count": true,
+            "is_notified": true,
+            "first_seen_at": true,
+            "last_seen_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "GAURAV_LOGMONITOR_ALERTS_LOG_FILE_ERROR_HASH": true
+        }
+    }
+}

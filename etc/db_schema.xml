@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    
+    <table name="gaurav_logmonitor_state" resource="default" engine="innodb" comment="Tracks byte offsets for log files">
+        <column xsi:type="varchar" name="file_path" length="255" nullable="false" comment="Full absolute path to log file"/>
+        <column xsi:type="bigint" name="last_byte_offset" padding="20" unsigned="true" nullable="false" default="0" comment="Last read byte position"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Last time this file was read"/>
+        
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="file_path"/>
+        </constraint>
+    </table>
+
+    <table name="gaurav_logmonitor_alerts" resource="default" engine="innodb" comment="Tracks unique errors for alerts">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="log_file" length="100" nullable="false" comment="Short Log file name e.g. exception.log"/>
+        <column xsi:type="varchar" name="error_hash" length="32" nullable="false" comment="MD5 fingerprint of the error string"/>
+        <column xsi:type="text" name="error_preview" nullable="false" comment="Snippet of the error for the email"/>
+        <column xsi:type="int" name="occurrence_count" padding="10" unsigned="true" nullable="false" default="1" comment="Number of times this error occurred"/>
+        <column xsi:type="smallint" name="is_notified" padding="5" unsigned="true" nullable="false" default="0" comment="0 = pending email, 1 = already emailed"/>
+        <column xsi:type="timestamp" name="first_seen_at" nullable="false" default="CURRENT_TIMESTAMP" comment="When this specific error first happened"/>
+        <column xsi:type="timestamp" name="last_seen_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="When this error happened last"/>
+        
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="GAURAV_LOGMONITOR_UNIQUE_HASH">
+            <column name="log_file"/>
+            <column name="error_hash"/>
+        </constraint>
+    </table>
+</schema>

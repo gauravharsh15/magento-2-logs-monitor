@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="gaurav" translate="label" sortOrder="100">
+            <label>Gaurav Extensions</label>
+        </tab>
+        
+        <section id="logmonitor" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+            <class>separator-top</class>
+            <label>Log Monitor</label>
+            <tab>gaurav</tab>
+            <resource>Gaurav_LogMonitor::config</resource>
+            
+            <group id="general" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>General Settings</label>
+                
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Module</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                
+                <field id="ignore_files" translate="label comment" type="textarea" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Ignore Log Files</label>
+                    <comment>Comma-separated list of filenames to skip (e.g., debug.log, custom.log). The scanner will ignore these completely.</comment>
+                </field>
+            </group>
+            
+            <group id="alerts" translate="label" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Email Alert Settings</label>
+                
+                <field id="recipient_emails" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Recipient Emails</label>
+                    <comment>Comma-separated emails (e.g., dev@agency.com, admin@store.com). If left blank, it falls back to the store's General Contact email.</comment>
+                </field>
+                
+                <field id="threshold" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Minimum Occurrences Threshold</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <comment>Only send an email alert if the error has happened this many times. Default is 1.</comment>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

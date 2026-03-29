@@ -1,0 +1,38 @@
+<div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; border: 1px solid #e0e0e0;">
+    <div style="background-color: #d84315; padding: 20px; color: white; text-align: center;">
+        <h2 style="margin: 0;">🚨 Magento Production Alert</h2>
+        <p style="margin: 5px 0 0 0;">New unique errors detected in your logs.</p>
+    </div>
+
+    <div style="background-color: #f4f4f4; padding: 15px; border-bottom: 2px solid #ccc; display: flex; justify-content: space-between;">
+        <div>
+            <strong>Monitoring:</strong> <code>var/log/*.log</code><br>
+            <strong>Combined Size:</strong> <span style="color: #d84315; font-weight: bold;">{{var file_size}}</span>
+        </div>
+        <div style="text-align: right;">
+            <strong>Last Written:</strong> {{var last_modified}}<br>
+            <strong>Unique New Errors:</strong> {{var error_count}}
+        </div>
+    </div>
+
+    <div style="padding: 20px;">
+        <h3 style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 0;">Error Details</h3>
+        
+        {{depend alerts}}
+            {{loop alerts as alert}}
+            <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed #eee;">
+                <div style="margin-bottom: 5px;">
+                    <span style="background-color: #ffeeee; color: #cc0000; padding: 3px 8px; border-radius: 3px; font-size: 12px; font-weight: bold;">Happened {{var alert.occurrence_count}} times</span>
+                    <span style="font-size: 12px; color: #666; margin-left: 10px;">File: {{var alert.log_file}}</span>
+                </div>
+                <p style="font-family: monospace; font-size: 13px; background: #f9f9f9; padding: 10px; border-left: 3px solid #cc0000; margin: 0; word-break: break-all;">
+                    {{var alert.error_preview}}...
+                </p>
+                <div style="font-size: 11px; color: #999; margin-top: 5px;">
+                    First seen: {{var alert.first_seen_at}} | Last seen: {{var alert.last_seen_at}}
+                </div>
+            </div>
+            {{/loop}}
+        {{/depend}}
+    </div>
+</div>
