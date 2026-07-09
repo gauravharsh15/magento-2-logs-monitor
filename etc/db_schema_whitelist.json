@@ -1,15 +1,13 @@
 {
     "gaurav_logmonitor_state": {
         "column": {
-            "file_path": true,
-            "last_byte_offset": true,
-            "updated_at": true,
             "entity_id": true,
-            "file_name": true
+            "file_name": true,
+            "last_byte_offset": true
         },
         "constraint": {
             "PRIMARY": true,
-            "GAURAV_LOGMONITOR_STATE_FILE_NAME": true
+            "UNQ_GAURAV_LOGMONITOR_STATE_FILE_NAME": true
         }
     },
     "gaurav_logmonitor_alerts": {
@@ -18,16 +16,29 @@
             "log_file": true,
             "error_hash": true,
             "error_preview": true,
+            "severity": true,
+            "full_trace": true,
             "occurrence_count": true,
+            "last_notified_count": true,
             "is_notified": true,
             "first_seen_at": true,
-            "last_seen_at": true,
-            "severity": true,
-            "full_trace": true
+            "last_seen_at": true
         },
         "constraint": {
             "PRIMARY": true,
-            "GAURAV_LOGMONITOR_ALERTS_LOG_FILE_ERROR_HASH": true
+            "GAURAV_LOGMONITOR_UNIQUE_HASH": true
+        }
+    },
+    "gaurav_logmonitor_archive_state": {
+        "column": {
+            "entity_id": true,
+            "archive_name": true,
+            "file_size": true,
+            "processed_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "UNQ_GAURAV_LOGMONITOR_ARCHIVE_NAME_SIZE": true
         }
     }
 }

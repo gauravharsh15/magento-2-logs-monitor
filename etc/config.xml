@@ -5,6 +5,8 @@
             <general>
                 <enabled>1</enabled>
                 <ignore_files></ignore_files>
+                <scan_archives>0</scan_archives>
+                <retention_days>0</retention_days>
             </general>
             <alerts>
                 <recipient_emails></recipient_emails>

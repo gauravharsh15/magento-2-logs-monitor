@@ -8,5 +8,9 @@
         <job name="gaurav_logmonitor_send_alerts" instance="Gaurav\LogMonitor\Cron\SendAlerts" method="execute">
             <schedule>0 * * * *</schedule>
         </job>
+
+        <job name="gaurav_logmonitor_cleanup" instance="Gaurav\LogMonitor\Cron\CleanupAlerts" method="execute">
+            <schedule>30 2 * * *</schedule>
+        </job>
     </group>
 </config>

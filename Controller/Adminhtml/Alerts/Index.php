@@ -7,7 +7,7 @@ use Magento\Framework\View\Result\PageFactory;
 
 class Index extends Action
 {
-    const ADMIN_RESOURCE = 'Magento_Backend::system';
+    const ADMIN_RESOURCE = 'Gaurav_LogMonitor::alerts';
     protected $resultPageFactory;
 
     public function __construct(Context $context, PageFactory $resultPageFactory)

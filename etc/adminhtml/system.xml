@@ -23,6 +23,18 @@
                     <label>Ignore Log Files</label>
                     <comment>Comma-separated list of filenames to skip (e.g., debug.log, custom.log). The scanner will ignore these completely.</comment>
                 </field>
+
+                <field id="scan_archives" translate="label comment" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Scan Rotated/Gzipped Archives</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>If your server rotates and gzips log files daily (e.g. exception.log.1.gz), enable this so the scanner also reads those archives once each - this closes the gap where errors written just before rotation would otherwise never be seen. Archives are immutable and only ever read one time, so this adds minimal overhead.</comment>
+                </field>
+
+                <field id="retention_days" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Alert Retention (Days)</label>
+                    <validate>validate-digits validate-zero-or-greater</validate>
+                    <comment>Automatically delete alert records not seen in this many days. Set to 0 to disable automatic cleanup and keep everything.</comment>
+                </field>
             </group>
             
             <group id="alerts" translate="label" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">

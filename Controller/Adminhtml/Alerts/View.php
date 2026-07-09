@@ -8,6 +8,14 @@ use Gaurav\LogMonitor\Model\AlertFactory;
 
 class View extends Action
 {
+    /**
+     * Without this, the default ADMIN_RESOURCE ('Magento_Backend::admin') applies,
+     * which any backend-logged-in admin passes regardless of role - letting them
+     * read raw stack traces (which can contain paths, tokens, DB details) even if
+     * they were never granted the Log Monitor ACL resource.
+     */
+    const ADMIN_RESOURCE = 'Gaurav_LogMonitor::alerts';
+
     protected $rawResultFactory;
     protected $alertFactory;
 
@@ -23,7 +31,7 @@ class View extends Action
 
     public function execute()
     {
-        $id = $this->getRequest()->getParam('id');
+        $id = (int)$this->getRequest()->getParam('id');
         $alert = $this->alertFactory->create()->load($id);
 
         $result = $this->rawResultFactory->create();
