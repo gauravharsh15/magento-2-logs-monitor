@@ -3,7 +3,8 @@
         "column": {
             "entity_id": true,
             "file_name": true,
-            "last_byte_offset": true
+            "last_byte_offset": true,
+            "fingerprint": true
         },
         "constraint": {
             "PRIMARY": true,
@@ -21,8 +22,12 @@
             "occurrence_count": true,
             "last_notified_count": true,
             "is_notified": true,
+            "last_notified_at": true,
             "first_seen_at": true,
             "last_seen_at": true
+        },
+        "index": {
+            "GAURAV_LOGMONITOR_ALERTS_LAST_SEEN_AT": true
         },
         "constraint": {
             "PRIMARY": true,

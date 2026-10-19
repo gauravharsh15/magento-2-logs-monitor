@@ -1,11 +1,20 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
-    
+
     <type name="Magento\Framework\Console\CommandListInterface">
         <arguments>
             <argument name="commands" xsi:type="array">
                 <item name="logmonitor_process_command" xsi:type="object">Gaurav\LogMonitor\Console\Command\ProcessLogsCommand</item>
             </argument>
+        </arguments>
+    </type>
+
+    <!-- Console commands are instantiated on every bin/magento call (including
+         setup:install / setup:upgrade), so defer building the reader until the
+         command actually runs. -->
+    <type name="Gaurav\LogMonitor\Console\Command\ProcessLogsCommand">
+        <arguments>
+            <argument name="logReader" xsi:type="object">Gaurav\LogMonitor\Model\LogReader\Proxy</argument>
         </arguments>
     </type>
 
@@ -23,5 +32,5 @@
             </argument>
         </arguments>
     </type>
-    
+
 </config>

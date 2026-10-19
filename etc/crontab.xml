@@ -1,10 +1,13 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
-    <group id="default">
+    <!-- Own group (see cron_groups.xml): the "default" group runs its jobs one
+         after another in a single process, so a long first scan of a big log
+         would hold up every other default-group job behind it. -->
+    <group id="gaurav_logmonitor">
         <job name="gaurav_logmonitor_process" instance="Gaurav\LogMonitor\Cron\ProcessLogs" method="execute">
             <schedule>*/5 * * * *</schedule>
         </job>
-        
+
         <job name="gaurav_logmonitor_send_alerts" instance="Gaurav\LogMonitor\Cron\SendAlerts" method="execute">
             <schedule>0 * * * *</schedule>
         </job>

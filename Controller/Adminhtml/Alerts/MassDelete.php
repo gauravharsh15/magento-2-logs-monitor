@@ -3,16 +3,23 @@ namespace Gaurav\LogMonitor\Controller\Adminhtml\Alerts;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
+use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Ui\Component\MassAction\Filter;
 use Gaurav\LogMonitor\Model\ResourceModel\Alert\CollectionFactory;
 use Magento\Framework\Controller\ResultFactory;
 
-class MassDelete extends Action
+/**
+ * POST only: the grid's mass action always posts with a form key, and a GET
+ * with excluded=false would otherwise select - and delete - every alert.
+ */
+class MassDelete extends Action implements HttpPostActionInterface
 {
     /**
      * Using the custom ACL we defined
      */
     const ADMIN_RESOURCE = 'Gaurav_LogMonitor::alerts';
+
+    const DELETE_CHUNK_SIZE = 1000;
 
     protected $filter;
     protected $collectionFactory;
@@ -32,14 +39,16 @@ class MassDelete extends Action
         try {
             // Get the collection of selected records from the grid
             $collection = $this->filter->getCollection($this->collectionFactory->create());
-            $collectionSize = $collection->getSize();
 
-            // Iterate and delete
-            foreach ($collection as $alert) {
-                $alert->delete();
+            // Delete by ID instead of loading each alert: "Select All" on a big
+            // table would otherwise pull every full_trace into memory first.
+            $connection = $collection->getConnection();
+            $deleted = 0;
+            foreach (array_chunk($collection->getAllIds(), self::DELETE_CHUNK_SIZE) as $ids) {
+                $deleted += $connection->delete($collection->getMainTable(), ['entity_id IN (?)' => $ids]);
             }
 
-            $this->messageManager->addSuccessMessage(__('A total of %1 alert(s) have been deleted.', $collectionSize));
+            $this->messageManager->addSuccessMessage(__('A total of %1 alert(s) have been deleted.', $deleted));
         } catch (\Exception $e) {
             $this->messageManager->addErrorMessage($e->getMessage());
         }

@@ -4,51 +4,71 @@
         <tab id="gaurav" translate="label" sortOrder="100">
             <label>Gaurav Extensions</label>
         </tab>
-        
-        <section id="logmonitor" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+
+        <!-- Default scope only: the scanner and alert emails run from cron for the
+             whole server, so a website/store-view value would never be read. -->
+        <section id="logmonitor" translate="label" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
             <class>separator-top</class>
             <label>Log Monitor</label>
             <tab>gaurav</tab>
             <resource>Gaurav_LogMonitor::config</resource>
-            
-            <group id="general" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+
+            <group id="general" translate="label" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
                 <label>General Settings</label>
-                
-                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Enable Module</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
-                
-                <field id="ignore_files" translate="label comment" type="textarea" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+
+                <field id="ignore_files" translate="label comment" type="textarea" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Ignore Log Files</label>
-                    <comment>Comma-separated list of filenames to skip (e.g., debug.log, custom.log). The scanner will ignore these completely.</comment>
+                    <comment><![CDATA[Comma-separated file names to skip entirely. Wildcards are allowed, e.g. <code>debug.log, payment_*.log</code>. debug.log is ignored by default because, when debug logging is on, it repeats every entry from system.log and exception.log.]]></comment>
                 </field>
 
-                <field id="scan_archives" translate="label comment" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Scan Rotated/Gzipped Archives</label>
+                <field id="min_severity" translate="label comment" type="select" sortOrder="25" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Minimum Severity</label>
+                    <source_model>Gaurav\LogMonitor\Model\Config\Source\Severity</source_model>
+                    <comment>Entries below this level are ignored. Entries whose level can't be read (shown as UNKNOWN) are always kept.</comment>
+                </field>
+
+                <field id="group_similar" translate="label comment" type="select" sortOrder="27" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Group Similar Errors</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment>If your server rotates and gzips log files daily (e.g. exception.log.1.gz), enable this so the scanner also reads those archives once each - this closes the gap where errors written just before rotation would otherwise never be seen. Archives are immutable and only ever read one time, so this adds minimal overhead.</comment>
+                    <comment>Ignore numbers, IDs, UUIDs, hashes and email addresses when deciding whether two errors are the same, so "Order 1001 failed" and "Order 1002 failed" become one alert. Set to No to group only identical messages. Changing this starts new alert rows for errors already recorded.</comment>
                 </field>
 
-                <field id="retention_days" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                <field id="scan_archives" translate="label comment" type="select" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Recover Entries from Rotated Logs</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>If your server rotates log files (e.g. logrotate renaming exception.log to exception.log.1 or exception.log.1.gz), enable this so that when a rotation is detected, the part of the rotated copy written after the last scan is read too. Without it, errors logged in the few minutes before each rotation are missed. Rotated copies must stay in var/log, plain or gzipped.</comment>
+                </field>
+
+                <field id="retention_days" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Alert Retention (Days)</label>
                     <validate>validate-digits validate-zero-or-greater</validate>
-                    <comment>Automatically delete alert records not seen in this many days. Set to 0 to disable automatic cleanup and keep everything.</comment>
+                    <comment>Automatically delete alert records not seen in this many days. Set to 0 to disable automatic cleanup and keep everything (at most 10,000 alerts are stored; new kinds of errors are dropped once that is reached).</comment>
                 </field>
             </group>
-            
-            <group id="alerts" translate="label" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+
+            <group id="alerts" translate="label" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
                 <label>Email Alert Settings</label>
-                
-                <field id="recipient_emails" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+
+                <field id="recipient_emails" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Recipient Emails</label>
-                    <comment>Comma-separated emails (e.g., dev@agency.com, admin@store.com). If left blank, it falls back to the store's General Contact email.</comment>
+                    <comment>Comma-separated emails (e.g., dev@agency.com, admin@store.com). If left blank, no emails are sent - alerts are only shown in the admin. Invalid addresses are skipped.</comment>
                 </field>
-                
-                <field id="threshold" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+
+                <field id="threshold" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Minimum Occurrences Threshold</label>
                     <validate>validate-digits validate-greater-than-zero</validate>
-                    <comment>Only send an email alert if the error has happened this many times. Default is 1.</comment>
+                    <comment>Only send an email alert if the error has happened this many times (since it was first seen, or since its last email). Default is 1.</comment>
+                </field>
+
+                <field id="renotify_hours" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Re-alert Interval (Hours)</label>
+                    <validate>validate-digits validate-zero-or-greater</validate>
+                    <comment>An error that was already emailed is only included again after this many hours, and only if it has recurred. Set to 0 to include it in every hourly email while it keeps recurring. New errors are never delayed.</comment>
                 </field>
             </group>
         </section>

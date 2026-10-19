@@ -3,9 +3,10 @@ namespace Gaurav\LogMonitor\Controller\Adminhtml\Alerts;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
+use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\View\Result\PageFactory;
 
-class Index extends Action
+class Index extends Action implements HttpGetActionInterface
 {
     const ADMIN_RESOURCE = 'Gaurav_LogMonitor::alerts';
     protected $resultPageFactory;

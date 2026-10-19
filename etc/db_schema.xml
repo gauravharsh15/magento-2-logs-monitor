@@ -1,10 +1,11 @@
 <?xml version="1.0"?>
 <schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
-    
+
     <table name="gaurav_logmonitor_state" resource="default" engine="innodb" comment="Log Monitor File State Tracking">
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="file_name" nullable="false" length="255" comment="Log File Name"/>
-        <column xsi:type="int" name="last_byte_offset" padding="10" unsigned="true" nullable="false" default="0" comment="Last Read Byte Offset"/>
+        <column xsi:type="bigint" name="last_byte_offset" padding="20" unsigned="true" nullable="false" default="0" comment="Last Read Byte Offset"/>
+        <column xsi:type="varchar" name="fingerprint" nullable="true" length="32" comment="MD5 of the file's first line, used to detect rotation"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
@@ -23,8 +24,9 @@
         <column xsi:type="int" name="occurrence_count" padding="10" unsigned="true" nullable="false" default="1" comment="Number of times this error occurred"/>
         <column xsi:type="int" name="last_notified_count" padding="10" unsigned="true" nullable="false" default="0" comment="occurrence_count value at the time of the last notification email"/>
         <column xsi:type="smallint" name="is_notified" padding="5" unsigned="true" nullable="false" default="0" comment="0 = never emailed, 1 = has been emailed at least once"/>
+        <column xsi:type="timestamp" name="last_notified_at" nullable="true" comment="When this error was last included in an alert email"/>
         <column xsi:type="timestamp" name="first_seen_at" nullable="false" default="CURRENT_TIMESTAMP" comment="When this specific error first happened"/>
-        <column xsi:type="timestamp" name="last_seen_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="When this error happened last"/>
+        <column xsi:type="timestamp" name="last_seen_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="When this error happened last"/>
 
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
@@ -33,19 +35,8 @@
             <column name="log_file"/>
             <column name="error_hash"/>
         </constraint>
-    </table>
-
-    <table name="gaurav_logmonitor_archive_state" resource="default" engine="innodb" comment="Tracks already-processed rotated/gzipped log archives">
-        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
-        <column xsi:type="varchar" name="archive_name" nullable="false" length="255" comment="Rotated/Archived File Name, e.g. exception.log.1.gz"/>
-        <column xsi:type="bigint" name="file_size" padding="20" unsigned="true" nullable="false" comment="Archive File Size in Bytes (archives are immutable once rotated)"/>
-        <column xsi:type="timestamp" name="processed_at" nullable="false" default="CURRENT_TIMESTAMP" comment="When this archive was fully scanned"/>
-        <constraint xsi:type="primary" referenceId="PRIMARY">
-            <column name="entity_id"/>
-        </constraint>
-        <constraint xsi:type="unique" referenceId="UNQ_GAURAV_LOGMONITOR_ARCHIVE_NAME_SIZE">
-            <column name="archive_name"/>
-            <column name="file_size"/>
-        </constraint>
+        <index referenceId="GAURAV_LOGMONITOR_ALERTS_LAST_SEEN_AT" indexType="btree">
+            <column name="last_seen_at"/>
+        </index>
     </table>
 </schema>

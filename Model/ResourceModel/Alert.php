@@ -1,7 +1,7 @@
 <?php
 namespace Gaurav\LogMonitor\Model\ResourceModel;
 
-use Magento\Framework\Model\AbstractModel;
+use Magento\Framework\DB\Sql\Expression;
 use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
 
 class Alert extends AbstractDb
@@ -12,26 +12,61 @@ class Alert extends AbstractDb
     }
 
     /**
-     * Load an alert by its (log_file, error_hash) composite key.
+     * Which of $hashes already have a row for $logFile.
      *
-     * The dedup unique key is (log_file, error_hash), not error_hash alone -
-     * loading by hash only would match the wrong row when the same error text
-     * appears in two different log files.
+     * @return string[]
      */
-    public function loadByFileAndHash(AbstractModel $object, $logFile, $hash)
+    public function getExistingHashes($logFile, array $hashes)
     {
-        $connection = $this->getConnection();
-        $select = $connection->select()
-            ->from($this->getMainTable())
-            ->where('log_file = ?', $logFile)
-            ->where('error_hash = ?', $hash);
-
-        $data = $connection->fetchRow($select);
-        if ($data) {
-            $object->setData($data);
-            $this->_afterLoad($object);
+        if (empty($hashes)) {
+            return [];
         }
 
-        return $this;
+        $connection = $this->getConnection();
+        return $connection->fetchCol(
+            $connection->select()
+                ->from($this->getMainTable(), ['error_hash'])
+                ->where('log_file = ?', $logFile)
+                ->where('error_hash IN (?)', $hashes)
+        );
+    }
+
+    /**
+     * @return int
+     */
+    public function countAlerts()
+    {
+        $connection = $this->getConnection();
+        return (int)$connection->fetchOne(
+            $connection->select()->from($this->getMainTable(), [new Expression('COUNT(*)')])
+        );
+    }
+
+    /**
+     * Insert new alerts and merge repeats into existing ones in a single query.
+     *
+     * Rows are matched on the (log_file, error_hash) unique key. For an existing
+     * row only the count and the first/last-seen window change - its severity,
+     * preview and trace stay as first recorded.
+     *
+     * @param array $rows each with log_file, error_hash, severity, error_preview,
+     *                    full_trace, occurrence_count, first_seen_at, last_seen_at
+     * @return int affected rows
+     */
+    public function upsertAlerts(array $rows)
+    {
+        if (empty($rows)) {
+            return 0;
+        }
+
+        return $this->getConnection()->insertOnDuplicate(
+            $this->getMainTable(),
+            $rows,
+            [
+                'occurrence_count' => new Expression('occurrence_count + VALUES(occurrence_count)'),
+                'first_seen_at' => new Expression('LEAST(first_seen_at, VALUES(first_seen_at))'),
+                'last_seen_at' => new Expression('GREATEST(last_seen_at, VALUES(last_seen_at))'),
+            ]
+        );
     }
 }

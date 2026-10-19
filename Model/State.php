@@ -29,4 +29,18 @@ class State extends AbstractModel
     {
         return $this->setData('last_byte_offset', $offset);
     }
+
+    /**
+     * MD5 of the file's first line when it was last read; a different value
+     * means the file was rotated.
+     */
+    public function getFingerprint()
+    {
+        return $this->getData('fingerprint');
+    }
+
+    public function setFingerprint($fingerprint)
+    {
+        return $this->setData('fingerprint', $fingerprint);
+    }
 }

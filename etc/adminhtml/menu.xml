@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Backend/etc/menu.xsd">
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
     <menu>
-        <add id="Gaurav_LogMonitor::alerts" 
-             title="Log Monitor Alerts" 
-             module="Gaurav_LogMonitor" 
-             sortOrder="50" 
-             parent="Magento_Backend::system" 
-             action="logmonitor/alerts/index" 
-             resource="Magento_Backend::system"/>
+        <add id="Gaurav_LogMonitor::alerts"
+             title="Log Monitor Alerts"
+             module="Gaurav_LogMonitor"
+             sortOrder="50"
+             parent="Magento_Backend::system"
+             action="logmonitor/alerts/index"
+             resource="Gaurav_LogMonitor::alerts"/>
     </menu>
 </config>

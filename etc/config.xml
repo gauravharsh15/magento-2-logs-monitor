@@ -4,13 +4,16 @@
         <logmonitor>
             <general>
                 <enabled>1</enabled>
-                <ignore_files></ignore_files>
+                <ignore_files>debug.log</ignore_files>
+                <min_severity>NOTICE</min_severity>
+                <group_similar>1</group_similar>
                 <scan_archives>0</scan_archives>
-                <retention_days>0</retention_days>
+                <retention_days>30</retention_days>
             </general>
             <alerts>
                 <recipient_emails></recipient_emails>
                 <threshold>1</threshold>
+                <renotify_hours>24</renotify_hours>
             </alerts>
         </logmonitor>
     </default>
